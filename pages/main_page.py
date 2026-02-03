@@ -8,44 +8,57 @@ from utils import drag_and_drop_html5
 
 
 class MainLocators:
+    # Заголовок конструктора
     TITLE = (By.XPATH, "//*[contains(normalize-space(),'Соберите бургер')]")
 
+    # Навигация
     NAV_CONSTRUCTOR = (By.XPATH, "//p[normalize-space()='Конструктор']/ancestor::a")
     NAV_FEED = (By.XPATH, "//p[normalize-space()='Лента Заказов' or normalize-space()='Лента заказов']/ancestor::a")
 
+    # Кнопка оформления
     ORDER_BUTTON = (By.XPATH, "//button[normalize-space()='Оформить заказ']")
 
-    # Модалка ингредиента
+    # Модалка (универсальные локаторы)
     MODAL = (By.XPATH, "//section[contains(@class,'Modal') or contains(@class,'modal')]")
     MODAL_OVERLAY = (By.XPATH, "//div[contains(@class,'Modal_modal_overlay') or contains(@class,'modal_overlay')]")
     MODAL_CLOSE = (
         By.XPATH,
-        "//section[contains(@class,'Modal') or contains(@class,'modal')]//button"
-        "[contains(@class,'close') or contains(@class,'Close')]",
+        "//section[contains(@class,'Modal') or contains(@class,'modal')]"
+        "//button[contains(@class,'close') or contains(@class,'Close')]",
     )
 
+    # Контент модалки ингредиента
     INGREDIENT_DETAILS_TITLE = (
         By.XPATH,
-        "//section[contains(@class,'Modal') or contains(@class,'modal')]//*[contains(normalize-space(), 'Детали ингредиента')]",
+        "//section[contains(@class,'Modal') or contains(@class,'modal')]"
+        "//*[contains(normalize-space(), 'Детали ингредиента')]",
     )
 
-    # Секция заказа справа
+    # Сообщение о принятом заказе
+    ORDER_ACCEPTED_TEXT = (
+        By.XPATH,
+        "//section[contains(@class,'Modal') or contains(@class,'modal')]"
+        "//*[contains(normalize-space(),'Ваш заказ начали готовить')]",
+    )
+
+    # Номер заказа (цифры)
+    ORDER_NUMBER = (
+        By.XPATH,
+        "//section[contains(@class,'Modal') or contains(@class,'modal')]"
+        "//*[contains(@class,'digits') or contains(@class,'Digits') or self::h2]",
+    )
+
+    # Зона дропа (конструктор)
     ORDER_DROP_AREA = (By.XPATH, "//section[contains(@class,'BurgerConstructor')]")
 
 
 class MainPage(BasePage):
-    def open_constructor(self) -> None:
-        self.open(self.base_url + "/")
-        self.wait_visible(MainLocators.TITLE, timeout=10)
-
-    def click_constructor_nav(self) -> None:
-        self.click(MainLocators.NAV_CONSTRUCTOR)
-
-    def click_feed_nav(self) -> None:
-        self.click(MainLocators.NAV_FEED)
-        
+    # -------------------------
+    # Динамические локаторы
+    # -------------------------
     @staticmethod
     def ingredient_card_locator(name: str):
+        """Карточка ингредиента по названию."""
         return (
             By.XPATH,
             f"//a[contains(@class,'BurgerIngredient')][.//*[normalize-space()='{name}']]",
@@ -53,6 +66,7 @@ class MainPage(BasePage):
 
     @staticmethod
     def ingredient_counter_locator(name: str):
+        """Счётчик на карточке ингредиента по названию."""
         return (
             By.XPATH,
             f"//a[contains(@class,'BurgerIngredient')][.//*[normalize-space()='{name}']]"
@@ -60,54 +74,133 @@ class MainPage(BasePage):
             "//*[contains(@class,'counter') or contains(@class,'Counter')]",
         )
 
+    @staticmethod
+    def modal_ingredient_name_locator(name: str):
+        """
+        Название ингредиента в модалке деталей ингредиента.
+        Вынесено в Page Object, чтобы в тестах не было By.XPATH.
+        """
+        return (
+            By.XPATH,
+            "//section[contains(@class,'Modal') or contains(@class,'modal')]"
+            f"//*[self::p or self::h2][normalize-space()='{name}']",
+        )
+
+    # -------------------------
+    # Проверки страницы
+    # -------------------------
+    @allure.step("Проверить, что открыт конструктор")
+    def is_constructor_page_opened(self, timeout: int = DEFAULT_TIMEOUT) -> bool:
+        """
+        Явная проверка для теста: URL + заголовок на странице.
+        """
+        ok_url = self.wait_url_contains("/", timeout=timeout)
+        try:
+            self.wait_visible(MainLocators.TITLE, timeout=timeout)
+            ok_title = True
+        except Exception:
+            ok_title = False
+        return bool(ok_url and ok_title)
+
+    # -------------------------
+    # Навигация / открытие
+    # -------------------------
+    @allure.step("Открыть конструктор")
+    def open_constructor(self) -> None:
+        self.open(self.base_url + "/")
+        self.wait_visible(MainLocators.TITLE, timeout=DEFAULT_TIMEOUT)
+
+    @allure.step("Кликнуть в навигации: Конструктор")
+    def click_constructor_nav(self) -> None:
+        self.click(MainLocators.NAV_CONSTRUCTOR, timeout=DEFAULT_TIMEOUT)
+
+    @allure.step("Кликнуть в навигации: Лента заказов")
+    def click_feed_nav(self) -> None:
+        self.click(MainLocators.NAV_FEED, timeout=DEFAULT_TIMEOUT)
+
+    # -------------------------
+    # Модалка ингредиента
+    # -------------------------
+    @allure.step("Открыть модалку ингредиента: {name}")
     def open_ingredient_details(self, name: str) -> None:
+        """
+        Открывает модалку деталей ингредиента и ждёт:
+        - заголовок "Детали ингредиента"
+        - имя ингредиента внутри модалки
+        """
         locator = self.ingredient_card_locator(name)
-        el = self.wait_visible(locator, timeout=10)
-        self.scroll_into_view(el)
 
-        self.click(locator, timeout=10)
+        card = self.wait_visible(locator, timeout=DEFAULT_TIMEOUT)
+        self.scroll_into_view(card)
 
-        self.wait_visible(MainLocators.INGREDIENT_DETAILS_TITLE, timeout=10)
+        self.click(locator, timeout=DEFAULT_TIMEOUT)
 
+        self.wait_visible(MainLocators.INGREDIENT_DETAILS_TITLE, timeout=DEFAULT_TIMEOUT)
+        self.wait_ingredient_name_in_modal(name, timeout=DEFAULT_TIMEOUT)
+
+    @allure.step("Подождать, что в модалке отображается ингредиент: {name}")
+    def wait_ingredient_name_in_modal(self, name: str, timeout: int = DEFAULT_TIMEOUT) -> None:
+        self.wait_visible(self.modal_ingredient_name_locator(name), timeout=timeout)
+
+    @allure.step("Проверить, что в модалке отображается ингредиент: {name}")
+    def is_ingredient_name_visible_in_modal(self, name: str, timeout: int = DEFAULT_TIMEOUT) -> bool:
+        try:
+            self.wait_visible(self.modal_ingredient_name_locator(name), timeout=timeout)
+            return True
+        except Exception:
+            return False
+
+    @allure.step("Закрыть модалку")
     def close_modal(self) -> None:
+        """
+        Закрывает модалку по крестику (если есть), иначе кликом по оверлею.
+        """
         if self.exists(MainLocators.MODAL_CLOSE):
-            self.click(MainLocators.MODAL_CLOSE)
+            self.click(MainLocators.MODAL_CLOSE, timeout=DEFAULT_TIMEOUT)
         else:
-            self.click(MainLocators.MODAL_OVERLAY)
+            self.click(MainLocators.MODAL_OVERLAY, timeout=DEFAULT_TIMEOUT)
 
-        self.wait_invisible(MainLocators.MODAL, timeout=10)
+        self.wait_invisible(MainLocators.MODAL, timeout=DEFAULT_TIMEOUT)
 
+    # -------------------------
+    # Работа с ингредиентами / заказом
+    # -------------------------
+    @allure.step("Получить значение счётчика ингредиента: {name}")
     def get_ingredient_counter(self, name: str) -> int:
         locator = self.ingredient_counter_locator(name)
         if not self.exists(locator):
             return 0
+
         text = self.driver.find_element(*locator).text.strip()
         return int(text) if text.isdigit() else 0
 
+    @allure.step("Дождаться значения счётчика ингредиента {name}: {expected}")
+    def wait_ingredient_counter_equals(self, name: str, expected: int, timeout: int = DEFAULT_TIMEOUT) -> None:
+        WebDriverWait(self.driver, timeout).until(lambda d: self.get_ingredient_counter(name) == expected)
+
+    @allure.step("Добавить ингредиент в заказ (drag&drop): {name}")
     def add_ingredient_to_order(self, name: str) -> None:
-        source = self.wait_visible(self.ingredient_card_locator(name), timeout=10)
-        target = self.wait_visible(MainLocators.ORDER_DROP_AREA, timeout=10)
+        source = self.wait_visible(self.ingredient_card_locator(name), timeout=DEFAULT_TIMEOUT)
+        target = self.wait_visible(MainLocators.ORDER_DROP_AREA, timeout=DEFAULT_TIMEOUT)
         self.scroll_into_view(source)
 
         drag_and_drop_html5(self.driver, source, target)
 
+    # -------------------------
+    # Заказ / номер заказа
+    # -------------------------
     @staticmethod
     def normalize_order_number_for_feed(order_number: str) -> str:
-        
+        """Оставляет только цифры — удобно для сопоставления в ленте."""
         return "".join(ch for ch in order_number if ch.isdigit())
 
+    @allure.step("Дождаться реального номера заказа (не 9999)")
     def wait_real_order_number(self, timeout: int = 30) -> str:
         """
         Ждём, пока в модалке появится “реальный” номер (не 9999).
         """
-        number_locator = (
-            By.XPATH,
-            "//section[contains(@class,'Modal') or contains(@class,'modal')]"
-            "//*[contains(@class,'digits') or contains(@class,'Digits') or self::h2]",
-        )
-
         def _get_number(_):
-            el = self.driver.find_element(*number_locator)
+            el = self.driver.find_element(*MainLocators.ORDER_NUMBER)
             txt = "".join(ch for ch in el.text.strip() if ch.isdigit())
             if txt and txt != "9999":
                 return txt
@@ -115,27 +208,22 @@ class MainPage(BasePage):
 
         return WebDriverWait(self.driver, timeout).until(_get_number)
 
-    @allure.step("Create order with bun={bun_name} and sauce={sauce_name}")
+    @allure.step("Создать заказ: булка={bun_name}, соус={sauce_name}")
     def create_order(self, bun_name: str, sauce_name: str) -> str:
         """
-        Требует авторизации! (по твоему описанию)
+        Требует авторизации.
+        Создаёт заказ и возвращает номер.
         """
         self.open_constructor()
 
         self.add_ingredient_to_order(bun_name)
         self.add_ingredient_to_order(sauce_name)
 
-        self.click(MainLocators.ORDER_BUTTON, timeout=15)
+        self.click(MainLocators.ORDER_BUTTON, timeout=DEFAULT_TIMEOUT)
 
         order_number = self.wait_real_order_number(timeout=40)
 
-        self.wait_visible(
-            (
-                By.XPATH,
-                "//section[contains(@class,'Modal') or contains(@class,'modal')]//*[contains(normalize-space(),'Ваш заказ начали готовить')]",
-            ),
-            timeout=20,
-        )
+        self.wait_visible(MainLocators.ORDER_ACCEPTED_TEXT, timeout=DEFAULT_TIMEOUT)
 
         self.close_modal()
         return order_number

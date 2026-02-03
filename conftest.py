@@ -94,5 +94,6 @@ def authorized_driver(driver, base_url):
 
     # Проверка что реально залогинились: есть кнопка "Оформить заказ"
     main.wait_visible(MainLocators.ORDER_BUTTON, timeout=15)
-
+    assert "/login" not in driver.current_url
     return main
+    

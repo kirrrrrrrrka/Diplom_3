@@ -11,7 +11,7 @@
 
 ---
 
-## Протетсированно
+## Протетсированно:
 
 ### Раздел «Конструктор»
 URL: `https://stellarburgers.education-services.ru/`

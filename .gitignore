@@ -24,7 +24,6 @@ env/
 Thumbs.db
 *.log
 allure-results/
-allure-report/
 report.html
 reports/
 test-results/
