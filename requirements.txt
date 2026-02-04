@@ -1,4 +1,6 @@
 pytest>=7.4,<9
 selenium>=4.15,<5
 allure-pytest>=2.13.2
-webdriver-manager>=4.0.1
+
+# Драйверы устанавливаются через Selenium Manager (входит в Selenium 4.6+),
+# поэтому webdriver-manager не нужен.

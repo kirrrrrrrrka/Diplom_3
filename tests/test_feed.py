@@ -3,10 +3,7 @@ import allure
 
 from pages.feed_page import FeedPage
 from pages.main_page import MainPage
-
-
-BUN_NAME = "Флюоресцентная булка R2-D3"
-SAUCE_NAME = "Соус Spicy-X"
+from data.ingredients import BUN_NAME, SAUCE_NAME
 
 
 @allure.feature("Лента заказов")
@@ -51,12 +48,4 @@ class TestFeed:
 
         feed = FeedPage(driver, base_url)
         feed.open_feed()
-        where = feed.wait_order_in_work(expected, timeout=90)
-
-        assert where in ("work", "done")
-        if where == "done":
-            allure.attach(
-                "Order moved to 'Готовы' quickly; 'В работе' may already be empty.",
-                name="fast-complete",
-                attachment_type=allure.attachment_type.TEXT,
-            )
+        assert feed.wait_order_in_work(expected, timeout=90)

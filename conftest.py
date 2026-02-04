@@ -2,12 +2,14 @@ import pytest
 import allure
 
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 from config import BASE_URL, TEST_USER_EMAIL, TEST_USER_PASSWORD
 from pages.login_page import LoginPage
-from pages.main_page import MainPage, MainLocators
+from pages.main_page import MainPage
+from locators.main_locators import MainLocators
 
 
 def pytest_addoption(parser):
@@ -22,9 +24,7 @@ def base_url():
 
 @pytest.fixture(params=["chrome", "firefox"])
 def driver(request):
-    """
-    Драйвер создаётся через Selenium Manager (без webdriver_manager и без GitHub).
-    """
+   
     browser = request.param
     headless = request.config.getoption("--headless")
     chosen = request.config.getoption("--browser")
@@ -42,7 +42,7 @@ def driver(request):
 
         drv = webdriver.Chrome(options=options)
 
-    else:  # firefox
+    else:  
         options = FirefoxOptions()
         if headless:
             options.add_argument("-headless")
@@ -56,27 +56,27 @@ def driver(request):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """
-    При падении теста прикладываем в Allure:
-    - скриншот
-    - html страницы
-    """
+    
     outcome = yield
     rep = outcome.get_result()
 
     if rep.when == "call" and rep.failed:
         driver = item.funcargs.get("driver", None)
         if driver:
+        
             try:
                 png = driver.get_screenshot_as_png()
+            except WebDriverException:
+                png = None
+            if png:
                 allure.attach(png, name="screenshot", attachment_type=allure.attachment_type.PNG)
-            except Exception:
-                pass
+
             try:
                 html = driver.page_source
+            except WebDriverException:
+                html = None
+            if html:
                 allure.attach(html, name="page_source", attachment_type=allure.attachment_type.HTML)
-            except Exception:
-                pass
 
 
 @pytest.fixture
@@ -92,7 +92,6 @@ def authorized_driver(driver, base_url):
     main = MainPage(driver, base_url)
     main.open_constructor()
 
-    # Проверка что реально залогинились: есть кнопка "Оформить заказ"
     main.wait_visible(MainLocators.ORDER_BUTTON, timeout=15)
     assert "/login" not in driver.current_url
     return main

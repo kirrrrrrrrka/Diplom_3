@@ -4,14 +4,14 @@
 
 Проект с автотестами UI для 
 - *Pytest*
-- *Seleniumr*
+- *Selenium*
 - *Page Object*
 - *Allure Report*
 - Тесты в окружениях  **Google Chrome** и **Mozilla Firefox**
 
 ---
 
-## Протетсированно:
+## Протестировано:
 
 ### Раздел «Конструктор»
 URL: `https://stellarburgers.education-services.ru/`

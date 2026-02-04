@@ -1,12 +1,11 @@
 import pytest
 import allure
 
-from pages.feed_page import FeedLocators, FeedPage
-from pages.main_page import MainLocators, MainPage
-
-
-BUN_NAME = "Флюоресцентная булка R2-D3"
-SAUCE_NAME = "Соус Spicy-X"
+from pages.feed_page import FeedPage
+from pages.main_page import MainPage
+from locators.feed_locators import FeedLocators
+from locators.main_locators import MainLocators
+from data.ingredients import BUN_NAME, SAUCE_NAME
 
 
 @allure.feature("Конструктор")
@@ -30,7 +29,6 @@ class TestConstructor:
         feed = FeedPage(driver, base_url)
         assert feed.is_feed_page_opened()
 
-        # Доп. явная проверка по элементу (можно оставить, можно убрать)
         feed.wait_visible(FeedLocators.TITLE)
 
     @allure.title("Клик по ингредиенту открывает модалку с деталями")

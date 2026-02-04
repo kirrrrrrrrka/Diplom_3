@@ -5,39 +5,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from config import DEFAULT_TIMEOUT
 from pages.base_page import BasePage
-
-
-class LoginLocators:
-    ENTER_FROM_MAIN = (By.XPATH, "//button[contains(normalize-space(), 'Войти в аккаунт')]")
-
-    EMAIL = (
-        By.XPATH,
-        "//form//label[normalize-space()='Email']/following::input[1]"
-        " | //form//input[@placeholder='Email' or @placeholder='E-mail']"
-        " | //form//input[@name='name' and (@type='text' or @type='email')]",
-    )
-
-    PASSWORD = (
-        By.XPATH,
-        "//form//label[normalize-space()='Пароль']/following::input[1]"
-        " | //form//input[@type='password' or @placeholder='Пароль']",
-    )
-
-    SUBMIT = (By.XPATH, "//button[normalize-space()='Войти']")
+from locators.login_locators import LoginLocators
 
 
 class LoginPage(BasePage):
     @allure.step("Открыть страницу логина")
     def open_login(self) -> None:
-        # пробуем зайти с главной через кнопку
-        self.open(self.base_url + "/")
-        try:
-            self.click(LoginLocators.ENTER_FROM_MAIN, timeout=DEFAULT_TIMEOUT)
-        except Exception:
-            # если кнопки нет/не кликается — открываем напрямую
-            self.open(self.base_url + "/login")
 
-        self.wait_login_opened()
+        self.open(self.base_url + "/login")
+        self.wait_login_opened(timeout=DEFAULT_TIMEOUT)
 
     @allure.step("Дождаться открытия страницы логина")
     def wait_login_opened(self, timeout: int = DEFAULT_TIMEOUT) -> None:
@@ -63,5 +39,4 @@ class LoginPage(BasePage):
 
         self.click(LoginLocators.SUBMIT, timeout=DEFAULT_TIMEOUT)
 
-        # явная проверка: ушли со страницы /login
         self.wait_left_login_page(timeout=15)
